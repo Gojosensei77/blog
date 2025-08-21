@@ -5,9 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}My Blog{% endblock %}</title>
   <meta name="description" content="Tech blog with tutorials and insights.">
+  <link rel="canonical" href="{{ request.base_url }}">
+  <meta name="robots" content="index,follow">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="My Blog">
+  <meta property="og:description" content="Latest posts and tutorials">
+  <meta property="og:url" content="{{ request.base_url }}">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="My Blog">
+  <meta name="twitter:description" content="Latest posts and tutorials">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <script defer src="{{ url_for('static', filename='app.js') }}"></script>
   <link rel="alternate" type="application/rss+xml" title="RSS" href="{{ url_for('seo.feed') }}" />
+  {% block head_extra %}{% endblock %}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "My Blog",
+    "url": "{{ request.url_root }}",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "{{ request.url_root }}?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
 </head>
 <body>
   <nav class="navbar container">

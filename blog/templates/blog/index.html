@@ -1,5 +1,15 @@
 {% extends 'base.html' %}
 
+{% block head_extra %}
+  <link rel="canonical" href="{{ request.base_url }}">
+  {% if page and page > 1 %}
+    <link rel="prev" href="{{ url_for('index', q=q, page=page-1) }}">
+  {% endif %}
+  {% if total_pages and page and page < total_pages %}
+    <link rel="next" href="{{ url_for('index', q=q, page=page+1) }}">
+  {% endif %}
+{% endblock %}
+
 {% block header %}
   <h2>{% block title %}Posts{% endblock %}</h2>
   <form class="search" method="get" action="{{ url_for('index') }}">
