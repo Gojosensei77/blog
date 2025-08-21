@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}My Blog{% endblock %}</title>
+  <meta name="description" content="Tech blog with tutorials and insights.">
+  <link rel="canonical" href="{{ request.base_url }}">
+  <meta name="robots" content="index,follow">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="My Blog">
+  <meta property="og:description" content="Latest posts and tutorials">
+  <meta property="og:url" content="{{ request.base_url }}">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="My Blog">
+  <meta name="twitter:description" content="Latest posts and tutorials">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script defer src="{{ url_for('static', filename='app.js') }}"></script>
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="{{ url_for('seo.feed') }}" />
+  {% block head_extra %}{% endblock %}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "My Blog",
+    "url": "{{ request.url_root }}",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "{{ request.url_root }}?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+</head>
+<body>
+  <nav class="navbar container">
+    <div class="nav-left">
+      <a class="brand" href="{{ url_for('index') }}">My Blog</a>
+      {% if g.user %}
+        <a class="nav-link" href="{{ url_for('blog.create') }}">New Post</a>
+      {% endif %}
+    </div>
+    <div class="nav-right">
+      <button class="btn ghost" id="theme-toggle" aria-label="Toggle theme">🌓</button>
+      {% if g.user %}
+        <span class="user">{{ g.user['username'] }}</span>
+        <a class="btn" href="{{ url_for('auth.logout') }}">Log Out</a>
+      {% else %}
+        <a class="btn ghost" href="{{ url_for('auth.register') }}">Register</a>
+        <a class="btn" href="{{ url_for('auth.login') }}">Log In</a>
+      {% endif %}
+    </div>
+  </nav>
+  <main class="container">
+    <header class="page-header">
+      {% block header %}{% endblock %}
+    </header>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="alert">
+          {% for message in messages %}
+            <div>{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="footer">
+    <div class="container">
+      <div>© {{ 2025 }} My Blog</div>
+      <div><a href="{{ url_for('seo.feed') }}">RSS</a> · <a href="{{ url_for('seo.sitemap') }}">Sitemap</a></div>
+    </div>
+  </footer>
+</body>
+</html>
