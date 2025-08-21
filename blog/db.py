@@ -23,6 +23,7 @@ def close_database_connection(_: Any | None = None) -> None:
 SCHEMA_SQL = """
 DROP TABLE IF EXISTS user;
 DROP TABLE IF EXISTS post;
+DROP TABLE IF EXISTS feed;
 
 CREATE TABLE user (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,9 +37,19 @@ CREATE TABLE post (
   author_id INTEGER NOT NULL,
   title TEXT NOT NULL,
   body TEXT NOT NULL,
+  source_url TEXT UNIQUE,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP,
   FOREIGN KEY (author_id) REFERENCES user (id)
+);
+
+CREATE TABLE IF NOT EXISTS feed (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  url TEXT UNIQUE NOT NULL,
+  title TEXT,
+  etag TEXT,
+  modified TEXT,
+  last_fetched TIMESTAMP
 );
 """
 
@@ -58,4 +69,23 @@ def init_db_command() -> None:
 def init_app(app) -> None:
     app.teardown_appcontext(close_database_connection)
     app.cli.add_command(init_db_command)
+
+    # Best-effort ensure schema pieces exist for running apps without re-init
+    with app.app_context():
+        db = get_database_connection()
+        try:
+            cols = [r[1] for r in db.execute("PRAGMA table_info(post)").fetchall()]
+            if "source_url" not in cols:
+                db.execute("ALTER TABLE post ADD COLUMN source_url TEXT")
+                db.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_post_source_url ON post(source_url)")
+                db.commit()
+        except Exception:
+            pass
+        try:
+            db.execute(
+                "CREATE TABLE IF NOT EXISTS feed (id INTEGER PRIMARY KEY AUTOINCREMENT, url TEXT UNIQUE NOT NULL, title TEXT, etag TEXT, modified TEXT, last_fetched TIMESTAMP)"
+            )
+            db.commit()
+        except Exception:
+            pass
 

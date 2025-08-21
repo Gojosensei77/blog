@@ -8,6 +8,7 @@ def create_app(test_config: dict | None = None) -> Flask:
     app.config.from_mapping(
         SECRET_KEY=os.environ.get("FLASK_SECRET_KEY", "dev"),
         DATABASE=os.path.join(app.instance_path, "blog.sqlite"),
+        API_KEY=os.environ.get("BLOG_API_KEY"),
     )
 
     if test_config is not None:
@@ -29,6 +30,9 @@ def create_app(test_config: dict | None = None) -> Flask:
     from . import blog
     app.register_blueprint(blog.bp)
     app.add_url_rule("/", endpoint="index")
+
+    from . import api
+    app.register_blueprint(api.bp)
 
     return app
 

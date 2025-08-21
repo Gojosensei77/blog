@@ -16,7 +16,7 @@ def index() -> str:
     db_conn = get_database_connection()
     posts = db_conn.execute(
         """
-        SELECT p.id, title, body, created_at, updated_at, author_id, username
+        SELECT p.id, p.title, p.body, p.created_at, p.updated_at, p.author_id, u.username
         FROM post p JOIN user u ON p.author_id = u.id
         ORDER BY p.created_at DESC
         """
@@ -49,7 +49,7 @@ def get_post(post_id: int, check_author: bool = True):
     db_conn = get_database_connection()
     post = db_conn.execute(
         """
-        SELECT p.id, title, body, created_at, updated_at, author_id, username
+        SELECT p.id, p.title, p.body, p.created_at, p.updated_at, p.author_id, u.username
         FROM post p JOIN user u ON p.author_id = u.id
         WHERE p.id = ?
         """,
