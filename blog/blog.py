@@ -14,35 +14,48 @@ bp = Blueprint("blog", __name__)
 @bp.route("/")
 def index() -> str:
     db_conn = get_database_connection()
+    query_text = (request.args.get("q") or "").strip()
+    try:
+        page = max(int(request.args.get("page", 1)), 1)
+    except Exception:
+        page = 1
+    per_page = 10
+    offset = (page - 1) * per_page
+
+    where_clause = ""
+    params: list[object] = []
+    if query_text:
+        where_clause = "WHERE p.title LIKE ? OR p.body LIKE ?"
+        like = f"%{query_text}%"
+        params.extend([like, like])
+
     posts = db_conn.execute(
-        """
+        f"""
         SELECT p.id, p.title, p.body, p.created_at, p.updated_at, p.author_id, u.username
         FROM post p JOIN user u ON p.author_id = u.id
+        {where_clause}
         ORDER BY p.created_at DESC
-        """
+        LIMIT ? OFFSET ?
+        """,
+        (*params, per_page, offset),
     ).fetchall()
-    return cast(str, render_template("blog/index.html", posts=posts))
 
+    total_row = db_conn.execute(
+        f"SELECT COUNT(*) AS count FROM post p {where_clause}", (*params,)
+    ).fetchone()
+    total = int(total_row["count"]) if total_row else 0
+    total_pages = max((total + per_page - 1) // per_page, 1)
 
-@bp.route("/create", methods=("GET", "POST"))
-@login_required
-def create() -> str | Response:
-    if request.method == "POST":
-        title: str = request.form.get("title", "").strip()
-        body: str = request.form.get("body", "").strip()
-        error_message: str | None = None
-        if not title:
-            error_message = "Title is required."
-        if error_message is None:
-            db_conn = get_database_connection()
-            db_conn.execute(
-                "INSERT INTO post (title, body, author_id) VALUES (?, ?, ?)",
-                (title, body, g.user["id"]),
-            )
-            db_conn.commit()
-            return redirect(url_for("blog.index"))
-        flash(error_message)
-    return cast(str, render_template("blog/create.html"))
+    return cast(
+        str,
+        render_template(
+            "blog/index.html",
+            posts=posts,
+            q=query_text,
+            page=page,
+            total_pages=total_pages,
+        ),
+    )
 
 
 def get_post(post_id: int, check_author: bool = True):
@@ -65,38 +78,7 @@ def get_post(post_id: int, check_author: bool = True):
     return post
 
 
-@bp.route("/<int:id>/update", methods=("GET", "POST"))
-@login_required
-def update(id: int) -> str | Response:
-    post = get_post(id)
-
-    if request.method == "POST":
-        title: str = request.form.get("title", "").strip()
-        body: str = request.form.get("body", "").strip()
-        error_message: str | None = None
-        if not title:
-            error_message = "Title is required."
-
-        if error_message is None:
-            db_conn = get_database_connection()
-            db_conn.execute(
-                "UPDATE post SET title = ?, body = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-                (title, body, id),
-            )
-            db_conn.commit()
-            return redirect(url_for("blog.index"))
-
-        flash(error_message)
-
-    return cast(str, render_template("blog/update.html", post=post))
-
-
-@bp.route("/<int:id>/delete", methods=("POST",))
-@login_required
-def delete(id: int) -> Response:
-    get_post(id)
-    db_conn = get_database_connection()
-    db_conn.execute("DELETE FROM post WHERE id = ?", (id,))
-    db_conn.commit()
-    return redirect(url_for("blog.index"))
-
+@bp.route("/<int:id>")
+def detail(id: int) -> str:
+    post = get_post(id, check_author=False)
+    return cast(str, render_template("blog/detail.html", post=post))

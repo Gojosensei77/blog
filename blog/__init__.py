@@ -34,5 +34,8 @@ def create_app(test_config: dict | None = None) -> Flask:
     from . import api
     app.register_blueprint(api.bp)
 
+    from . import seo
+    app.register_blueprint(seo.bp)
+
     return app
 

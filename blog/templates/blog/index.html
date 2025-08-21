@@ -2,30 +2,46 @@
 
 {% block header %}
   <h2>{% block title %}Posts{% endblock %}</h2>
-  {% if g.user %}
-    <a class="action" href="{{ url_for('blog.create') }}">New</a>
-  {% endif %}
+  <form class="search" method="get" action="{{ url_for('index') }}">
+    <input type="text" name="q" placeholder="Search posts..." value="{{ q or '' }}">
+    <input type="submit" value="Search">
+  </form>
 {% endblock %}
 
 {% block content %}
-  {% for post in posts %}
-    <article class="post">
-      <header>
-        <div>
-          <h3>{{ post['title'] }}</h3>
+  <div class="grid">
+    {% for post in posts %}
+      <article class="card post">
+        <header>
+          <h3><a href="{{ url_for('blog.detail', id=post['id']) }}">{{ post['title'] }}</a></h3>
           <div class="about">by {{ post['username'] }} on {{ post['created_at'] }}</div>
-        </div>
+        </header>
+        <p class="body">{{ (post['body'] or '')[:300] }}{% if (post['body'] or '')|length > 300 %}...{% endif %}</p>
         {% if g.user and g.user['id'] == post['author_id'] %}
-          <a class="action" href="{{ url_for('blog.update', id=post['id']) }}">Edit</a>
+          <p><a class="action" href="{{ url_for('blog.update', id=post['id']) }}">Edit</a></p>
         {% endif %}
-      </header>
-      <p class="body">{{ post['body'] }}</p>
-    </article>
-    {% if not loop.last %}
-      <hr>
-    {% endif %}
-  {% else %}
-    <p>No posts yet.</p>
-  {% endfor %}
+      </article>
+    {% else %}
+      <p>No posts yet.</p>
+    {% endfor %}
+  </div>
+
+  {% if total_pages > 1 %}
+    <nav class="pagination">
+      {% set prev = page - 1 %}
+      {% set next = page + 1 %}
+      {% if page > 1 %}
+        <a href="{{ url_for('index', q=q, page=prev) }}">← Previous</a>
+      {% else %}
+        <span class="disabled">← Previous</span>
+      {% endif %}
+      <span>Page {{ page }} of {{ total_pages }}</span>
+      {% if page < total_pages %}
+        <a href="{{ url_for('index', q=q, page=next) }}">Next →</a>
+      {% else %}
+        <span class="disabled">Next →</span>
+      {% endif %}
+    </nav>
+  {% endif %}
 {% endblock %}
 
